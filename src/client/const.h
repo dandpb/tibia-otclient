@@ -665,6 +665,7 @@ namespace Otc
         GameNpcWindowRedesign = 133,
         GameTaskboard = 134,
         GameProficiency = 135,
+        GameTacticsWithoutFightMode = 136,
         LastGameFeature
     };
 
@@ -997,6 +998,9 @@ namespace Otc
         CLIENT_EVENT_TYPE_QUEST = 8,
         CLIENT_EVENT_TYPE_COSMETIC = 9,
         CLIENT_EVENT_TYPE_PROFICIENCY = 10,
+        CLIENT_EVENT_TYPE_BOUNTY_TASK = 11,
+        CLIENT_EVENT_TYPE_WEEKLY_TASK = 12,
+        CLIENT_EVENT_TYPE_SPELL_UNLOCKED = 13,
         CLIENT_EVENT_TYPE_LAST
     };
 

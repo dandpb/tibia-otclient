@@ -2817,6 +2817,15 @@ void ProtocolGame::parsePlayerCancelAttack(const InputMessagePtr& msg)
 
 void ProtocolGame::parsePlayerModes(const InputMessagePtr& msg)
 {
+    if (g_game.getFeature(Otc::GameTacticsWithoutFightMode)) {
+        const auto chaseMode = static_cast<Otc::ChaseModes>(msg->getU8());
+        const bool safeMode = static_cast<bool>(msg->getU8());
+        const auto pvpMode = static_cast<Otc::PVPModes>(msg->getU8());
+
+        g_game.processPlayerModes(g_game.getFightMode(), chaseMode, safeMode, pvpMode);
+        return;
+    }
+
     const auto fightMode = static_cast<Otc::FightModes>(msg->getU8());
     const auto chaseMode = static_cast<Otc::ChaseModes>(msg->getU8());
     const bool safeMode = static_cast<bool>(msg->getU8());
@@ -7132,8 +7141,24 @@ void ProtocolGame::parseClientEvent(const InputMessagePtr& msg)
             g_lua.callGlobalField("g_game", "onClientEvent", type, itemId, message);
             break;
         }
+        case Otc::CLIENT_EVENT_TYPE_BOUNTY_TASK: {
+            const auto taskId = msg->getU16();
+            g_lua.callGlobalField("g_game", "onClientEvent", type, taskId);
+            break;
+        }
+        case Otc::CLIENT_EVENT_TYPE_WEEKLY_TASK: {
+            const auto raceId = msg->getU16();
+            g_lua.callGlobalField("g_game", "onClientEvent", type, raceId);
+            break;
+        }
+        case Otc::CLIENT_EVENT_TYPE_SPELL_UNLOCKED: {
+            const auto spellId = msg->getU32();
+            g_lua.callGlobalField("g_game", "onClientEvent", type, spellId);
+            break;
+        }
         default:
-            throw stdext::exception("[ProtocolGame::parseClientEvent] Unknown event type {}", static_cast<uint8_t>(type));
+            g_logger.warning(std::format("[ProtocolGame::parseClientEvent] Unknown event type {}", static_cast<uint8_t>(type)));
+            break;
     }
 }
 
