@@ -1,0 +1,298 @@
+Panel
+  id: gameCopilotPanel
+  width: 176
+  height: 628
+
+  ScrollablePanel
+    anchors.fill: parent
+    padding: 4
+    vertical-scrollbar: gameCopilotScroll
+    layout:
+      type: verticalBox
+      spacing: 1
+
+
+    Label
+      id: title
+      text: Knight Copilot
+      text-align: center
+      font: verdana-11px-monochrome
+      color: #c0c0c0ff
+      height: 16
+
+    Label
+      id: status
+      text: Status: offline
+      height: 15
+
+    Label
+      text: PROFILE
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: character
+      text: Character: -
+      text-wrap: true
+      height: 26
+
+    Label
+      id: position
+      text: Position: -
+      height: 15
+
+    Label
+      text: PERMISSIONS
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    CheckBox
+      id: allowWalking
+      text: Allow walking
+      height: 17
+      tooltip: Allow validated walking requests.
+      @onCheckChange: gameCopilot:setPermission("allowWalking", self:isChecked())
+
+    CheckBox
+      id: allowCombat
+      text: Allow combat
+      height: 17
+      tooltip: Allow attacks against an explicit nearby monster target.
+      @onCheckChange: gameCopilot:setPermission("allowCombat", self:isChecked())
+
+    CheckBox
+      id: allowLoot
+      text: Allow loot
+      height: 17
+      tooltip: Allow validated quick-loot or corpse-open requests.
+      @onCheckChange: gameCopilot:setPermission("allowLoot", self:isChecked())
+
+    CheckBox
+      id: allowNpcTalk
+      text: Allow NPC talk
+      height: 17
+      tooltip: Allow validated messages to an explicit nearby NPC target.
+      @onCheckChange: gameCopilot:setPermission("allowNpcTalk", self:isChecked())
+
+    Label
+      text: SAFETY LIMITS
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: profileThresholds
+      text: Safety: 60% HP / 20% mana
+      text-wrap: true
+      height: 24
+
+    Label
+      id: limitsNote
+      text: HP applies to all actions; mana also protects combat.
+      text-wrap: true
+      height: 24
+
+    Label
+      text: MODE
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: mode
+      text: Mode: guide
+      height: 15
+
+    Panel
+      height: 22
+      layout:
+        type: horizontalBox
+        spacing: 2
+
+      Button
+        id: guideButton
+        text: Guide
+        width: 42
+        tooltip: Suggest actions without executing them.
+        @onClick: gameCopilot:setMode("guide")
+
+      Button
+        id: confirmButton
+        text: Confirm
+        width: 54
+        tooltip: Require explicit confirmation before any pending action.
+        @onClick: gameCopilot:setMode("confirm")
+
+      Button
+        id: autonomousButton
+        text: Auto
+        width: 66
+        tooltip: Automatically dispatch eligible actions within safety limits.
+        @onClick: gameCopilot:setMode("autonomous")
+
+    Label
+      text: MOVE REQUEST
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Panel
+      height: 22
+      layout:
+        type: horizontalBox
+        spacing: 2
+
+      Button
+        id: moveNorthButton
+        text: N
+        width: 40
+        @onClick: gameCopilot:requestWalk("north")
+
+      Button
+        id: moveEastButton
+        text: E
+        width: 40
+        @onClick: gameCopilot:requestWalk("east")
+
+      Button
+        id: moveSouthButton
+        text: S
+        width: 40
+        @onClick: gameCopilot:requestWalk("south")
+
+      Button
+        id: moveWestButton
+        text: W
+        width: 40
+        @onClick: gameCopilot:requestWalk("west")
+
+    Label
+      id: targetHint
+      text: Right-click a monster, corpse, or NPC for explicit copilot actions.
+      text-wrap: true
+      height: 28
+
+    Label
+      text: LEARNING / ROUTE
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: routeStatus
+      text: Route: none learned
+      text-wrap: true
+      height: 24
+
+    Panel
+      height: 22
+      layout:
+        type: horizontalBox
+        spacing: 2
+
+      Button
+        id: recordRouteButton
+        text: Record
+        width: 54
+        @onClick: gameCopilot:startRouteRecording("last_route", "Last learned route")
+
+      Button
+        id: stopRouteButton
+        text: Stop
+        width: 54
+        @onClick: |
+          if gameCopilot.activeRouteRecording then
+            gameCopilot:stopRouteRecording()
+          else
+            gameCopilot:stopRoutePlayback("manual")
+          end
+
+      Button
+        id: replayRouteButton
+        text: Replay
+        width: 54
+        @onClick: gameCopilot:startRoutePlayback("last_route")
+
+    Label
+      text: PAUSE / EMERGENCY
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Panel
+      height: 22
+      layout:
+        type: horizontalBox
+        spacing: 2
+
+      Button
+        id: pauseButton
+        text: Pause
+        width: 82
+        @onClick: gameCopilot:pause("manual")
+
+      Button
+        id: resumeButton
+        text: Resume
+        width: 82
+        @onClick: gameCopilot:resume()
+
+    Button
+      id: emergencyButton
+      text: Emergency pause
+      height: 22
+      tooltip: Pause future copilot actions and record an emergency reason.
+      @onClick: gameCopilot:pause("emergency")
+
+    Label
+      text: ACTION QUEUE (ONE SLOT)
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: pending
+      text: Pending action: none
+      text-wrap: true
+      height: 24
+
+    Button
+      id: executeButton
+      text: Confirm pending action
+      height: 22
+      tooltip: Execute the exact pending action when permissions and safety checks allow it.
+      @onClick: gameCopilot:confirmPending()
+
+    Label
+      text: QUESTS
+      font: verdana-11px-monochrome
+      color: #9d9d9dff
+      height: 14
+
+    Label
+      id: quests
+      text: Quests: none
+      text-wrap: true
+      height: 24
+
+    Button
+      id: refreshQuestLogButton
+      text: Refresh server quests
+      height: 22
+      tooltip: Request the real quest log from the connected game server.
+      @onClick: gameCopilot:refreshQuestLog()
+
+    Label
+      id: sessionLog
+      text: Last: none
+      height: 15
+
+
+  VerticalScrollBar
+    id: gameCopilotScroll
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    step: 20

@@ -1,0 +1,10 @@
+Module
+  name: game_copilot
+  description: Local, pauseable copilot for the Knight character
+  author: OpenAI
+  sandboxed: true
+  autoload: true
+  dependencies: [ game_interface, game_mainpanel, game_walk ]
+  scripts: [ game_copilot.lua, game_copilot_runtime.lua, game_copilot_lifecycle.lua, game_copilot_controls.lua, game_copilot_commands.lua, game_copilot_routes.lua, game_copilot_actions.lua, game_copilot_quests.lua, game_copilot_learning.lua, game_copilot_persistence.lua, game_copilot_ui.lua ]
+  @onLoad: gameCopilot.init()
+  @onUnload: gameCopilot.terminate()

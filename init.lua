@@ -3,11 +3,12 @@
 
 -- updater
 Services = {
-    --updater = "http://localhost/api/updater.php", --./updater
-    --status = "http://localhost/login.php", --./client_entergame | ./client_topmenu
-    --websites = "http://localhost/?subtopic=accountmanagement", --./client_entergame "Forgot password and/or email"
-    --createAccount = "http://localhost/clientcreateaccount.php", --./client_entergame -- createAccount.lua
-    --getCoinsUrl = "http://localhost/?subtopic=shop&step=terms", --./game_market
+   -- updater = "http://localhost/api/updater.php", --./updater
+    status = "http://127.0.0.1:8088/login", --./client_entergame | ./client_topmenu
+    --websites = "http://127.0.0.1:8088/accountmanagement", --./client_entergame "Forgot password and/or email"
+    -- Create Account endpoint: the local OpenTibiBR login-server (port 8088) handles account creation
+    createAccount = "http://127.0.0.1:8088/createAccount", --./client_entergame -- createAccount.lua
+    --getCoinsUrl = "http://127.0.0.1:8088/?subtopic=shop&step=terms", --./game_market
     clientAssets = {
         enabled = true,
         repository = "dudantas/tibia-client",
@@ -73,26 +74,11 @@ if ENABLE_SERVERS then
         -- @field httpLogin Enables HTTP-based login on the server
         -- @field useAuthenticator Enables additional authentication layer
         --
-        ["http://127.0.0.1/login.php"] = {
-            port = 80,
-            protocol = 1511,
+        ["http://127.0.0.1:8088/login"] = {
+            port = 8088,
+            protocol = 1525,
             httpLogin = true,
             useAuthenticator = false
-        },
-
-        -- External server
-        ---
-        -- Configuration for external server ip.net.
-        -- @class table
-        -- @name ip_net
-        -- @field port TCP port used for connection
-        -- @field protocol Protocol identifier used by the server
-        -- @field httpLogin Indicates if the server allows HTTP login
-        --
-        ["ip.net"] = {
-            port = 7171,
-            protocol = 860,
-            httpLogin = false
         }
     }
 end

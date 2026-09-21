@@ -26,3 +26,10 @@ Any change touching client-assets auto-installation must preserve the runtime co
 
 Reference: `docs/client-assets-auto-install.md`
 
+## Repository Map
+
+- Native startup is `src/main.cpp`; `init.lua` is the resource-root sentinel and module bootstrap.
+- Reusable framework code is documented at `src/framework/AGENTS.md`.
+- Tibia protocol/game code is documented at `src/client/AGENTS.md`.
+- Lua/OTUI feature modules are documented at `modules/AGENTS.md`.
+- Use CMake presets from this repository; `windows-tests` is the canonical Windows test preset. Preserve the current checkout's user changes in `init.lua`.
