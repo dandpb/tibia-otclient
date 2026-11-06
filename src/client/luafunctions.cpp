@@ -782,6 +782,7 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<ThingType>("hasElevation", &ThingType::hasElevation);
     g_lua.bindClassMemberFunction<ThingType>("hasFloorChange", &ThingType::hasFloorChange);
     g_lua.bindClassMemberFunction<ThingType>("isLyingCorpse", &ThingType::isLyingCorpse);
+    g_lua.bindClassMemberFunction<ThingType>("isCorpse", &ThingType::isCorpse);
     g_lua.bindClassMemberFunction<ThingType>("isAnimateAlways", &ThingType::isAnimateAlways);
     g_lua.bindClassMemberFunction<ThingType>("hasMiniMapColor", &ThingType::hasMiniMapColor);
     g_lua.bindClassMemberFunction<ThingType>("hasLensHelp", &ThingType::hasLensHelp);

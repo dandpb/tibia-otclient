@@ -137,6 +137,7 @@ public:
     bool hasElevation() { return (m_flags & ThingFlagAttrElevation); }
     bool hasFloorChange() const { return (m_flags & ThingFlagAttrFloorChange); }
     bool isLyingCorpse() { return (m_flags & ThingFlagAttrLyingCorpse); }
+    bool isCorpse() const { return m_corpse; }
     bool isAnimateAlways() { return (m_flags & ThingFlagAttrAnimateAlways); }
     bool hasMiniMapColor() { return (m_flags & ThingFlagAttrMinimapColor); }
     bool hasLensHelp() { return (m_flags & ThingFlagAttrLensHelp); }
@@ -225,6 +226,7 @@ private:
     ThingCategory m_category{ ThingInvalidCategory };
 
     bool m_null{ true };
+    bool m_corpse{ false };
     int8_t m_opaque{ -1 };
 
     Size m_size;

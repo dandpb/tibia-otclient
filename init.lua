@@ -4,9 +4,10 @@
 -- updater
 Services = {
     --updater = "http://localhost/api/updater.php", --./updater
-    --status = "http://localhost/login.php", --./client_entergame | ./client_topmenu
+    status = "http://127.0.0.1:8080/login.php", -- Canary bots with cast (WSL)
     --websites = "http://localhost/?subtopic=accountmanagement", --./client_entergame "Forgot password and/or email"
-    --createAccount = "http://localhost/clientcreateaccount.php", --./client_entergame -- createAccount.lua
+    -- Create Account endpoint: the local OpenTibiBR login-server (port 8088) handles account creation
+    createAccount = "http://127.0.0.1:8088/createAccount", --./client_entergame -- createAccount.lua
     --getCoinsUrl = "http://localhost/?subtopic=shop&step=terms", --./game_market
     clientAssets = {
         enabled = true,
@@ -63,6 +64,14 @@ if ENABLE_SERVERS then
     --
     Servers_init = {
 
+        -- Canary bots with cast (WSL)
+        ["http://127.0.0.1:8080/login.php"] = {
+            port = 8080,
+            protocol = 1500,
+            httpLogin = true,
+            useAuthenticator = false
+        },
+
         -- Local login server
         ---
         -- Configuration for local login server.
@@ -73,26 +82,11 @@ if ENABLE_SERVERS then
         -- @field httpLogin Enables HTTP-based login on the server
         -- @field useAuthenticator Enables additional authentication layer
         --
-        ["http://127.0.0.1/login.php"] = {
-            port = 80,
+        ["http://127.0.0.1:8088/login"] = {
+            port = 8088,
             protocol = 1525,
             httpLogin = true,
             useAuthenticator = false
-        },
-
-        -- External server
-        ---
-        -- Configuration for external server ip.net.
-        -- @class table
-        -- @name ip_net
-        -- @field port TCP port used for connection
-        -- @field protocol Protocol identifier used by the server
-        -- @field httpLogin Indicates if the server allows HTTP login
-        --
-        ["ip.net"] = {
-            port = 7171,
-            protocol = 860,
-            httpLogin = false
         }
     }
 end

@@ -391,7 +391,7 @@ void ThingType::applyAppearanceFlags(const appearances::AppearanceFlags& flags)
     }
 
     // charged to expire
-    // corpse
+    m_corpse = flags.has_corpse() && flags.corpse();
     // player_corpse
     if (flags.has_cyclopediaitem()) {
         m_cyclopediaType = flags.cyclopediaitem().cyclopedia_type();
