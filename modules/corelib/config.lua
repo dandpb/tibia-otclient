@@ -23,6 +23,10 @@ function Config:set(key, value)
     self:setValue(key, convertSettingValue(value))
 end
 
+function Config:setNumber(key, value)
+    self:set(key, value)
+end
+
 function Config:setDefault(key, value)
     if self:exists(key) then
         return false
