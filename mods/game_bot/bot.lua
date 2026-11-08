@@ -207,6 +207,15 @@ end
 
 function refresh()
   if not g_game.isOnline() then return end
+  -- A public cast is a spectator session, not control of the character.
+  -- Keep the owner's saved configuration without loading local bot scripts.
+  if type(G) == 'table' and type(G.account) == 'string' and G.account:lower() == '@cast' then
+    clear()
+    enableButton:setOn(false)
+    statusLabel:setOn(true)
+    statusLabel:setText('Status: spectator mode\nClient bot disabled')
+    return
+  end
   save()
   clear()
 
