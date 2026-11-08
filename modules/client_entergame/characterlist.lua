@@ -367,6 +367,33 @@ local function buildCharacters(pinnedLookup)
 end
 
 -- private functions
+local suspendedClientBot
+local function prepareClientBotForLogin()
+    local clientBot = g_modules.getModule('game_bot')
+    local spectator = type(G.account) == 'string' and G.account:lower() == '@cast'
+    if spectator then
+        -- Watching a character must not start its owner's saved automation.
+        -- Legacy bot panels can also starve layout processing during login.
+        if clientBot and clientBot:isLoaded() then
+            clientBot:unload()
+            if clientBot:isLoaded() then
+                return false
+            end
+            suspendedClientBot = clientBot
+        end
+    elseif suspendedClientBot then
+        if clientBot == suspendedClientBot and not clientBot:isLoaded() then
+            clientBot:load()
+            if not clientBot:isLoaded() then
+                g_logger.warning('Could not restore the local client bot after a spectator session')
+                return true
+            end
+        end
+        suspendedClientBot = nil
+    end
+    return true
+end
+
 local function tryLogin(charInfo, tries)
     tries = tries or 1
 
@@ -389,6 +416,12 @@ local function tryLogin(charInfo, tries)
     end
 
     CharacterList.hide()
+
+    if not prepareClientBotForLogin() then
+        CharacterList.show()
+        displayErrorBox(tr('Login Error'), tr('Could not suspend the local client bot for a spectator session.'))
+        return
+    end
 
     g_game.loginWorld(G.account, G.password, charInfo.worldName, charInfo.worldHost, charInfo.worldPort,
                       charInfo.characterName, G.authenticatorToken, G.sessionKey)
