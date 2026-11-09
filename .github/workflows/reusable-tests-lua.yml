@@ -32,3 +32,6 @@ jobs:
             fi
           done < <(find data modules mods -type f -name "*.lua" -print0)
           exit "${failed}"
+
+      - name: Test spectator session automation policy
+        run: luajit tests/lua/game_bot_spectator_test.lua
