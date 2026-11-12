@@ -41,6 +41,15 @@ local selectedItem = nil
 local cancelNextRelease = nil
 
 function controllerNpcTrader:legacy_init()
+    if initialized then
+        return
+    end
+
+    if npcWindow then
+        npcWindow:destroy()
+        npcWindow = nil
+    end
+
     npcWindow = g_ui.displayUI('/game_npctrade/templates/npctrade_legacy')
     npcWindow:setVisible(false)
 
@@ -88,15 +97,18 @@ function controllerNpcTrader:legacy_init()
 end
 
 function controllerNpcTrader:legacy_terminate()
-    initialized = false
-    if npcWindow then
-        npcWindow:destroy()
-    end
-    npcWindow = nil
+    -- Disconnect first: destroying an already-reloaded widget can throw and
+    -- would otherwise leave the LocalPlayer callbacks connected with npcWindow nil.
     disconnect(LocalPlayer, {
         onFreeCapacityChange = onFreeCapacityChange,
         onInventoryChange = onInventoryChange
     })
+    initialized = false
+
+    if npcWindow then
+        npcWindow:destroy()
+    end
+    npcWindow = nil
 end
 
 function controllerNpcTrader:legacy_show()
@@ -359,7 +371,7 @@ function refreshTradeItems()
 end
 
 function refreshPlayerGoods()
-    if not initialized then
+    if not initialized or not npcWindow then
         return
     end
 
@@ -459,12 +471,16 @@ end
 function onFreeCapacityChange(localPlayer, freeCapacity, oldFreeCapacity)
     playerFreeCapacity = freeCapacity
 
-    if npcWindow:isVisible() then
+    if npcWindow and npcWindow:isVisible() then
         refreshPlayerGoods()
     end
 end
 
 function onInventoryChange(inventory, item, oldItem)
+    if not initialized or not npcWindow then
+        return
+    end
+
     refreshPlayerGoods()
 end
 
