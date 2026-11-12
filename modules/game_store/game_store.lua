@@ -121,7 +121,7 @@ local function setImagenHttp(widget, url, isIcon)
     if GameStore.website.IMAGES_URL then
         HTTP.downloadImage(GameStore.website.IMAGES_URL .. url, function(path, err)
             if err then
-                g_logger.warning("HTTP error: " .. err .. " - " .. GameStore.website.IMAGES_URL .. url)
+                g_logger.debug("Store image unavailable: " .. err .. " - " .. GameStore.website.IMAGES_URL .. url)
                 if isIcon then
                     widget:setIcon("/game_store/images/dynamic-image-error")
                 else
@@ -535,7 +535,11 @@ end
 -- =============================================*/
 
 function onStoreInit(url, coinsPacketSize)
-    if not GameStore.website.IMAGES_URL then
+    if not GameStore.website.IMAGES_URL and url and url ~= "" then
+        -- The server sends the website base. Point a bare loopback base at the
+        -- site port and drop trailing slashes so paths never double up.
+        url = url:gsub("/+$", "")
+        url = url:gsub("^http://(127%.0%.0%.1|localhost)/", "http://%1:8080/")
         GameStore.website.IMAGES_URL = url
     end
 end
