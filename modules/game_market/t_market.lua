@@ -610,6 +610,13 @@ function configureList()
     table.sort(categoryList, function(a, b)
         return a[2] < b[2]
     end)
+
+    -- Every category the tree can select must have an item list, otherwise
+    -- selecting it (or toggling the locker-only filter) indexes a nil table.
+    marketItems[MarketCategory.All] = marketItems[MarketCategory.All] or {}
+    for _, pair in ipairs(categoryList) do
+        marketItems[pair[1]] = marketItems[pair[1]] or {}
+    end
 end
 
 -- Main Window
@@ -1166,7 +1173,7 @@ function onSelectChildCategory(widget, selected, keepFilter)
 
     local tier = sortButtons["tierFilter"] or 0
 
-    for i, itemInfo in ipairs(marketItems[selected.categoryId]) do
+    for i, itemInfo in ipairs(marketItems[selected.categoryId] or {}) do
         if checkSortMarketOptions(itemInfo) and
             not (showLockerOnly and getDepotItemCount(itemInfo.thingType:getId(), tier) == 0) then
             table.insert(cache.SCROLL_MARKET_ITEMS.listData, itemInfo)
@@ -1254,9 +1261,12 @@ function onUpdateChildItem(itemID, tier)
             local count = itemID == 22118 and getTransferableTibiaCoins() or getDepotItemCount(itemID, tier)
 
             if lastSelectedCategory then
-                local itemInfo = marketItems[lastSelectedCategory.categoryId][widget.item.itemIndex]
-                widget.item:setTooltip(tr("%s%s%s%s", comma_value(count), "x", (count > 65000 and "+ " or " "),
-                    itemInfo.marketData.name))
+                local categoryItems = marketItems[lastSelectedCategory.categoryId] or {}
+                local itemInfo = categoryItems[widget.item.itemIndex]
+                if itemInfo then
+                    widget.item:setTooltip(tr("%s%s%s%s", comma_value(count), "x", (count > 65000 and "+ " or " "),
+                        itemInfo.marketData.name))
+                end
             end
 
             widget.item:getItem():setCount(count)
