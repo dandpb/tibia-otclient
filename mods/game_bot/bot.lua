@@ -17,7 +17,10 @@ local enableButton = nil
 local executeEvent = nil
 local statusLabel = nil
 
-local configManagerUrl = "http://otclient.ovh/configs.php"
+-- The upstream config service (otclient.ovh) is gone: it rejects every
+-- request now ("Invalid post request ... use get instead"). Keep the local
+-- config manager only; set this to a working endpoint to re-enable sync.
+local configManagerUrl = ""
 
 function init()
   dofile("executor")
@@ -413,6 +416,9 @@ function createDefaultConfigs()
 end
 
 function uploadConfig()
+  if configManagerUrl == "" then
+      return displayErrorBox(tr("Config upload failed"), tr("The remote config service is offline. Use the local configs in the bot folder."))
+  end
   local config = editWindow.manager.upload.config:getCurrentOption().text
   local archive = compressConfig(config)
   if not archive then
@@ -436,6 +442,9 @@ function uploadConfig()
 end
 
 function downloadConfig()
+  if configManagerUrl == "" then
+      return displayErrorBox(tr("Config download error"), tr("The remote config service is offline. Use the local configs in the bot folder."))
+  end
   local hash = editWindow.manager.download.config:getText()
   if hash:len() == 0 then
       return displayErrorBox(tr("Config download error"), tr("Enter correct config hash"))
