@@ -2573,12 +2573,7 @@ void UIWidget::cacheRectToWord()
     // update rect size
     if (!m_rect.isValid() || hasProp(PropTextHorizontalAutoResize) || hasProp(PropTextVerticalAutoResize)) {
         textBoxSize += Size(m_padding.left + m_padding.right, m_padding.top + m_padding.bottom) + m_textOffset.toSize();
-        Size size = getSize();
-        if (size.width() <= 0 || (hasProp(PropTextHorizontalAutoResize) && !hasProp(PropTextWrap)))
-            size.setWidth(textBoxSize.width());
-        if (size.height() <= 0 || hasProp(PropTextVerticalAutoResize))
-            size.setHeight(textBoxSize.height());
-        setSize(size);
+        applyAutoResizeSize(textBoxSize);
     }
 
     Rect textScreenCoords = m_rect;

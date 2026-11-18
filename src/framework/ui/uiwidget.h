@@ -616,6 +616,8 @@ protected:
     void repaint();
     bool setState(Fw::WidgetState state, bool on);
     bool hasState(Fw::WidgetState state);
+    std::pair<bool, bool> getParentLayoutOwnedAxes();
+    void applyAutoResizeSize(const Size& textBoxSize);
 
 private:
     void internalDestroy();

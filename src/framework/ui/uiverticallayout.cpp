@@ -71,7 +71,7 @@ bool UIVerticalLayout::internalUpdate()
             }
         } else {
             // expand width
-            size.setWidth(paddingRect.width() - (widget->getMarginLeft() + widget->getMarginRight()));
+            size.setWidth(std::max<int>(0, paddingRect.width() - (widget->getMarginLeft() + widget->getMarginRight())));
             pos.x = paddingRect.left() + (paddingRect.width() - size.width()) / 2;
         }
 

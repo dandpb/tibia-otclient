@@ -109,7 +109,8 @@ public:
     DrawPoolType getCurrentType() const;
 
     void repaint(const DrawPoolType drawPool) const {
-        get(drawPool)->repaint();
+        if (auto* pool = get(drawPool))
+            pool->repaint();
     }
 
     bool isPreDrawing() const;

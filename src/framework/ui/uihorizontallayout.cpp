@@ -69,7 +69,7 @@ bool UIHorizontalLayout::internalUpdate()
             }
         } else {
             // expand height
-            size.setHeight(paddingRect.height() - (widget->getMarginTop() + widget->getMarginBottom()));
+            size.setHeight(std::max<int>(0, paddingRect.height() - (widget->getMarginTop() + widget->getMarginBottom())));
             pos.y = paddingRect.top() + (paddingRect.height() - size.height()) / 2;
         }
 

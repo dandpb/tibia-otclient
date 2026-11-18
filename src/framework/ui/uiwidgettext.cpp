@@ -21,6 +21,8 @@
  */
 
 #include "uiwidget.h"
+#include "uianchorlayout.h"
+#include "uilayout.h"
 #include "uitranslator.h"
 
 #include <framework/graphics/drawpoolmanager.h>
@@ -204,12 +206,75 @@ void UIWidget::initText()
     m_baseTextColor = m_color;
 }
 
+std::pair<bool, bool> UIWidget::getParentLayoutOwnedAxes()
+{
+    if (isOnHtml())
+        return { false, false };
+
+    const auto& parent = getParent();
+    if (!parent)
+        return { false, false };
+
+    const auto& layout = parent->getLayout();
+    if (!layout)
+        return { false, false };
+
+    if (layout->isUIVerticalLayout())
+        return { !isFixedSize(), false };
+    if (layout->isUIHorizontalLayout())
+        return { false, !isFixedSize() };
+    if (layout->isUIGridLayout())
+        return { true, true };
+
+    if (layout->isUIAnchorLayout()) {
+        const auto& anchorLayout = layout->static_self_cast<UIAnchorLayout>();
+        const auto& groups = anchorLayout->getAnchorsGroup();
+        const auto it = groups.find(static_self_cast<UIWidget>());
+        if (it == groups.end())
+            return { false, false };
+
+        bool hasLeft = false;
+        bool hasRight = false;
+        bool hasHCenter = false;
+        bool hasTop = false;
+        bool hasBottom = false;
+        bool hasVCenter = false;
+        for (const auto& anchor : it->second->getAnchors()) {
+            switch (anchor->getAnchoredEdge()) {
+                case Fw::AnchorLeft: hasLeft = true; break;
+                case Fw::AnchorRight: hasRight = true; break;
+                case Fw::AnchorHorizontalCenter: hasHCenter = true; break;
+                case Fw::AnchorTop: hasTop = true; break;
+                case Fw::AnchorBottom: hasBottom = true; break;
+                case Fw::AnchorVerticalCenter: hasVCenter = true; break;
+                default: break;
+            }
+        }
+        const bool ownsWidth = (hasLeft && hasRight) || ((hasLeft || hasRight) && hasHCenter);
+        const bool ownsHeight = (hasTop && hasBottom) || ((hasTop || hasBottom) && hasVCenter);
+        return { ownsWidth, ownsHeight };
+    }
+
+    return { false, false };
+}
+
+void UIWidget::applyAutoResizeSize(const Size& textBoxSize)
+{
+    const auto [widthOwnedByLayout, heightOwnedByLayout] = getParentLayoutOwnedAxes();
+    Size size = getSize();
+    if (!widthOwnedByLayout && (size.width() <= 0 || (hasProp(PropTextHorizontalAutoResize) && !isTextWrap())))
+        size.setWidth(textBoxSize.width());
+    if (!heightOwnedByLayout && (size.height() <= 0 || hasProp(PropTextVerticalAutoResize)))
+        size.setHeight(textBoxSize.height());
+    setSize(size);
+}
+
 void UIWidget::updateText()
 {
     if ((hasEventListener(EVENT_TEXT_CLICK) || hasEventListener(EVENT_TEXT_HOVER)) && m_textEvents.empty())
         processCodeTags();
 
-    if (isTextWrap() && m_rect.isValid()) {
+    if (m_font && isTextWrap() && m_rect.isValid()) {
         m_drawTextColors = m_textColors;
         const auto& wrapOptions = getTextWrapOptions();
         m_textWrapWidth = getWidth();
@@ -218,6 +283,8 @@ void UIWidget::updateText()
         else
             m_drawText = m_font->wrapText(m_text, getWidth() - m_textOffset.x, wrapOptions, &m_drawTextColors);
     } else {
+        if (isTextWrap() && getWidth() <= 0)
+            m_textWrapWidth = 0;
         if (m_textOverflowLength > 0 && m_text.length() > m_textOverflowLength)
             m_drawText = m_text.substr(0, m_textOverflowLength - m_textOverflowCharacter.length()) + m_textOverflowCharacter;
         else
@@ -234,14 +301,8 @@ void UIWidget::updateText()
         textBoxSize += Size(m_padding.left + m_padding.right, m_padding.top + m_padding.bottom) + m_textOffset.toSize();
         textBoxSize *= std::max<float>(m_fontScale, 1.f);
 
-        Size size = getSize();
-        if (size.width() <= 0 || (hasProp(PropTextHorizontalAutoResize) && !isTextWrap()))
-            size.setWidth(textBoxSize.width());
-        if (size.height() <= 0 || hasProp(PropTextVerticalAutoResize))
-            size.setHeight(textBoxSize.height());
-
         const int prevHeight = getHeight();
-        setSize(size);
+        applyAutoResizeSize(textBoxSize);
 
         // A text re-wrap at its final width changes the line count after the
         // content-sized ancestors were measured; let them re-measure.
