@@ -22,8 +22,12 @@
 
 #include "packet_player.h"
 
+#include <charconv>
+#include <sstream>
+
 #include "framework/core/clock.h"
 #include "framework/core/eventdispatcher.h"
+#include "framework/net/inputmessage.h"
 
 PacketPlayer::~PacketPlayer()
 {
@@ -33,30 +37,49 @@ PacketPlayer::~PacketPlayer()
 
 PacketPlayer::PacketPlayer(const std::string_view& file)
 {
-#ifdef ANDROID
-    std::ifstream f(std::string("records/") + std::string(file));
-#else
-    std::ifstream f(std::filesystem::path("records") / file);
-#endif
-    if (!f.is_open())
-        return;
-    std::string type, packetHex;
-    ticks_t time;
-    while (f >> type >> time >> packetHex) {
-        // Convert hex string to binary data manually
-        std::string packetStr;
-        for (size_t i = 0; i < packetHex.length(); i += 2) {
-            std::string byteString = packetHex.substr(i, 2);
-            char byte = (char)strtol(byteString.c_str(), nullptr, 16);
-            packetStr.push_back(byte);
+    if (file.empty() || file.find_first_of("/\\:") != std::string_view::npos || !file.ends_with(".cam"))
+        throw Exception("Invalid replay filename.");
+
+    const auto path = std::filesystem::path("records") / file;
+    std::error_code error;
+    const auto bytes = std::filesystem::file_size(path, error);
+    std::ifstream input(path, std::ios::binary);
+    if (error || bytes > 128 * 1024 * 1024 || !input)
+        throw Exception("Unable to open a bounded replay file.");
+
+    constexpr size_t maxPacket = InputMessage::BUFFER_MAXSIZE - 16;
+    ticks_t last = 0;
+    std::string row;
+    while (std::getline(input, row)) {
+        if (row.size() > maxPacket * 2 + 32)
+            throw Exception("Replay packet exceeds the input buffer.");
+        std::istringstream fields(row);
+        std::string direction, hex;
+        ticks_t at = 0;
+        if (!(fields >> direction >> at >> hex) ||
+            (direction != "<" && direction != ">") || at < last || at > 24 * 60 * 60 * 1000 ||
+            hex.empty() || hex.size() % 2 || hex.size() > maxPacket * 2)
+            throw Exception("Invalid replay packet row.");
+        fields >> std::ws;
+        if (!fields.eof())
+            throw Exception("Trailing data in replay packet.");
+        last = at;
+        if (direction == ">")
+            continue; // Outgoing client packets must never be replayed.
+        auto packet = std::make_shared<std::vector<uint8_t>>();
+        packet->reserve(hex.size() / 2);
+        for (size_t i = 0; i < hex.size(); i += 2) {
+            unsigned value = 0;
+            const auto* end = hex.data() + i + 2;
+            const auto result = std::from_chars(end - 2, end, value, 16);
+            if (result.ec != std::errc() || result.ptr != end)
+                throw Exception("Invalid replay packet hex.");
+            packet->push_back(static_cast<uint8_t>(value));
         }
-        auto packet = std::make_shared<std::vector<uint8_t>>(packetStr.begin(), packetStr.end());
-        if (type == "<") {
-            m_input.push_back(std::make_pair(time, packet));
-        } else if (type == ">") {
-            m_output.push_back(std::make_pair(time, packet));
-        }
+        m_input.emplace_back(at, std::move(packet));
     }
+    if (!input.eof() || m_input.empty())
+        throw Exception("Replay contains no complete inbound stream.");
 }
 
 void PacketPlayer::start(std::function<void(std::shared_ptr<std::vector<uint8_t>>)> recvCallback,
@@ -65,7 +88,16 @@ void PacketPlayer::start(std::function<void(std::shared_ptr<std::vector<uint8_t>
     m_start = g_clock.millis();
     m_recvCallback = recvCallback;
     m_disconnectCallback = disconnectCallback;
-    m_event = g_dispatcher.scheduleEvent(std::bind(&PacketPlayer::process, this), 50);
+    schedule(1);
+}
+
+void PacketPlayer::schedule(ticks_t delay)
+{
+    const std::weak_ptr<PacketPlayer> weak = static_self_cast<PacketPlayer>();
+    m_event = g_dispatcher.scheduleEvent([weak] {
+        if (const auto self = weak.lock())
+            self->process();
+    }, delay);
 }
 
 void PacketPlayer::stop()
@@ -77,7 +109,7 @@ void PacketPlayer::stop()
 
 void PacketPlayer::onOutputPacket(const OutputMessagePtr& packet)
 {
-    if (packet->getBuffer()[0] == 0x14) { // logout
+    if (!packet->getBuffer().empty() && packet->getBuffer().front() == 0x14) { // logout
         m_disconnectCallback(asio::error::eof);
         stop();
     }
@@ -96,7 +128,7 @@ void PacketPlayer::process()
     }
 
     if (!m_input.empty() && nextPacket > 1) {
-        m_event = g_dispatcher.scheduleEvent(std::bind(&PacketPlayer::process, this), nextPacket);
+        schedule(nextPacket);
     } else {
         m_disconnectCallback(asio::error::eof);
         stop();

@@ -461,11 +461,11 @@ void Protocol::onLocalDisconnected(std::error_code ec)
         return;
     auto self(asProtocol());
 #ifndef __EMSCRIPTEN__
-    post(g_ioService, [&, ec] {
-        if (m_disconnected)
+    post(g_ioService, [self, ec] {
+        if (self->m_disconnected)
             return;
-        m_disconnected = true;
-        onError(ec);
+        self->m_disconnected = true;
+        self->onError(ec);
     });
 #endif
 }
@@ -476,15 +476,17 @@ void Protocol::onPlayerPacket(const std::shared_ptr<std::vector<uint8_t>>& packe
         return;
     auto self(asProtocol());
 #ifndef __EMSCRIPTEN__
-    post(g_ioService, [&, packet] {
-        if (m_disconnected)
+    post(g_ioService, [self, packet] {
+        if (self->m_disconnected)
             return;
-        m_inputMessage->reset();
+        auto& input = self->m_inputMessage;
+        input->reset();
 
-        m_inputMessage->setHeaderSize(0);
-        m_inputMessage->fillBuffer(packet->data(), packet->size());
-        m_inputMessage->setMessageSize(packet->size());
-        onRecv(m_inputMessage);
+        input->setHeaderSize(0);
+        const auto size = static_cast<uint16_t>(packet->size());
+        input->fillBuffer(packet->data(), size);
+        input->setMessageSize(size);
+        self->onRecv(input);
     });
 #endif
 }
@@ -493,11 +495,14 @@ void Protocol::playRecord(PacketPlayerPtr player)
 {
     m_disconnected = false;
     m_player = player;
-    m_player->start([capture0 = asProtocol()](auto&& PH1) {
-        capture0->onPlayerPacket(std::forward<decltype(PH1)>(PH1));
+    const std::weak_ptr<Protocol> weak = asProtocol();
+    m_player->start([weak](const auto& packet) {
+        if (const auto self = weak.lock())
+            self->onPlayerPacket(packet);
     },
-    [capture0 = asProtocol()](auto&& PH1) {
-        capture0->onLocalDisconnected(std::forward<decltype(PH1)>(PH1));
+    [weak](const std::error_code& error) {
+        if (const auto self = weak.lock())
+            self->onLocalDisconnected(error);
     });
     return onConnect();
 }
