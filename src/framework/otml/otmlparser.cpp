@@ -347,10 +347,43 @@ void OTMLParser::parseNode(const std::string_view data)
     while (!line.empty() && (line.back() == ' ' || line.back() == '\t' || line.back() == '\r'))
         line.pop_back();
 
+    // A quoted tag keeps ':' and spaces inside the tag itself; only the colon
+    // after the closing quote separates tag from value.
+    bool quotedTag = false;
+    if (!line.empty() && (line.front() == '"' || line.front() == '\'')) {
+        const char quote = line.front();
+        std::size_t close = std::string::npos;
+        for (std::size_t i = 1; i < line.size(); ++i) {
+            if (line[i] == '\\') {
+                ++i;
+                continue;
+            }
+            if (line[i] == quote) {
+                close = i;
+                break;
+            }
+        }
+        if (close != std::string::npos) {
+            quotedTag = true;
+            for (std::size_t i = 1; i < close; ++i) {
+                if (line[i] == '\\' && i + 1 < close && (line[i + 1] == '\\' || line[i + 1] == quote))
+                    ++i;
+                tag += line[i];
+            }
+            if (close + 1 < line.size() && line[close + 1] == ':') {
+                dotsPos = close + 1;
+                if (close + 2 < line.size())
+                    value = line.substr(close + 2);
+            }
+        }
+    }
+
     const bool isUrlWithColon = (line.starts_with("http://") || line.starts_with("https://")) && line.back() == ':';
     const bool isUrlKey = line.starts_with("http://") || line.starts_with("https://");
 
-    if (isUrlWithColon) {
+    if (quotedTag) {
+        // tag and value were extracted above
+    } else if (isUrlWithColon) {
         // URL ending in ':' → treat as a key without ':' and no value on the same line
         tag = line.substr(0, line.size() - 1);
         // Value remains empty
@@ -387,7 +420,8 @@ void OTMLParser::parseNode(const std::string_view data)
         }
     }
 
-    stdext::trim(tag);
+    if (!quotedTag)
+        stdext::trim(tag);
     stdext::trim(value);
 
     // process multitine values

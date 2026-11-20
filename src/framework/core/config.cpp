@@ -39,13 +39,34 @@ bool Config::load(const std::string& file)
         return false;
 
     try {
-        if (const auto& confsDoc = OTMLDocument::parse(file); confsDoc)
+        if (const auto& confsDoc = OTMLDocument::parse(file); confsDoc) {
+            repairLegacySplitTags(confsDoc);
             m_confsDoc = confsDoc;
+        }
 
         return true;
     } catch (const stdext::exception& e) {
         g_logger.error("Unable to parse configuration file '{}': ", e.what());
         return false;
+    }
+}
+
+void Config::repairLegacySplitTags(const OTMLNodePtr& node)
+{
+    if (!node)
+        return;
+
+    for (const auto& child : node->children())
+        repairLegacySplitTags(child);
+
+    // Before tags were quoted, the parser split "host:port/path:" at the first
+    // colon into tag "host" + value "port/path:". The children survived under
+    // the wrong tag; rejoin them. A scalar leaf whose value ends in ':' has no
+    // children and is left untouched.
+    const auto value = node->rawValue();
+    if (node->hasTag() && !value.empty() && value.back() == ':' && node->hasChildren()) {
+        node->setTag(node->tag() + ":" + value.substr(0, value.size() - 1));
+        node->setValue("");
     }
 }
 

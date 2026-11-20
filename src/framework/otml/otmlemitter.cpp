@@ -23,6 +23,48 @@
 #include "otmldocument.h"
 #include "otmlemitter.h"
 
+namespace {
+
+// Tags are emitted verbatim and the parser splits unquoted lines at the first
+// ':', so any tag containing ':' (e.g. host:port/path settings keys) or other
+// syntax characters must be quoted to survive a save/load round trip.
+bool tagNeedsQuoting(const std::string_view tag)
+{
+    if (tag.empty())
+        return false;
+
+    const auto isSpace = [](const char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; };
+
+    // Leading characters the parser treats as syntax (list item, alias, comment,
+    // quoted tag) rather than as part of the tag.
+    const char front = tag.front();
+    if (front == '-' || front == '&' || front == '#' || front == '"' || front == '\'' || isSpace(front))
+        return true;
+
+    // Unquoted tags are split at the first ':' and trimmed on both ends.
+    if (tag.find(':') != std::string_view::npos || isSpace(tag.back()))
+        return true;
+
+    return false;
+}
+
+void emitTag(std::ostream& out, const std::string_view tag)
+{
+    if (!tagNeedsQuoting(tag)) {
+        out << tag;
+        return;
+    }
+    out << '"';
+    for (const char c : tag) {
+        if (c == '"' || c == '\\')
+            out << '\\';
+        out << c;
+    }
+    out << '"';
+}
+
+} // namespace
+
 std::string OTMLEmitter::emitNode(const OTMLNodePtr& node, const int currentDepth)
 {
     std::stringstream ss;
@@ -35,7 +77,7 @@ std::string OTMLEmitter::emitNode(const OTMLNodePtr& node, const int currentDept
 
         // emit node tag
         if (node->hasTag()) {
-            ss << node->tag();
+            emitTag(ss, node->tag());
 
             // add ':' to if the node is unique or has value
             if (node->hasValue() || node->isUnique() || node->isNull())

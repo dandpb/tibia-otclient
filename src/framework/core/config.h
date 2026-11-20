@@ -46,6 +46,10 @@ public:
     int getNodeSize(const std::string& key);
     OTMLNodePtr getOrCreateNode(const std::string& key, const OTMLNodePtr& ifNotExists);
 
+    // Rejoins tags that the pre-quoting parser split at the first colon
+    // (e.g. "127.0.0.1:8080/login.php:" stored as tag "127.0.0.1" + value "8080/login.php:").
+    static void repairLegacySplitTags(const OTMLNodePtr& node);
+
     bool exists(const std::string& key);
     void remove(const std::string& key);
 
